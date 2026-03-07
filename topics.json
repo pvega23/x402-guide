@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "what-is-x402-protocol",
+    "title": "What is x402 Protocol? Complete Beginner Guide",
+    "description": "Learn what the x402 protocol is, how it enables machine-to-machine payments using HTTP 402, and why it matters for AI agent commerce.",
+    "tags": ["beginner", "overview"]
+  },
+  {
+    "slug": "how-to-accept-x402-payments-api",
+    "title": "How to Accept x402 Payments in Your API",
+    "description": "Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.",
+    "tags": ["tutorial", "developer"]
+  },
+  {
+    "slug": "x402-vs-traditional-api-billing",
+    "title": "x402 vs Traditional API Billing: Cost Comparison",
+    "description": "Compare x402 micropayments against subscription models, API keys, and usage-based billing. See the real cost breakdown.",
+    "tags": ["comparison", "business"]
+  },
+  {
+    "slug": "building-first-x402-service-nodejs",
+    "title": "Building Your First x402 Service with Node.js",
+    "description": "Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.",
+    "tags": ["tutorial", "developer"]
+  },
+  {
+    "slug": "ultravioletadao-vs-cdp-facilitator",
+    "title": "UltravioletaDAO vs CDP Facilitator: Which to Choose",
+    "description": "Compare the two main x402 facilitators — UltravioletaDAO and Coinbase CDP. Features, fees, and which is right for you.",
+    "tags": ["comparison", "facilitator"]
+  },
+  {
+    "slug": "how-ai-agents-pay-with-x402",
+    "title": "How AI Agents Pay for Services with x402",
+    "description": "Discover how autonomous AI agents use x402 to pay for APIs, data, and services without human intervention.",
+    "tags": ["ai-agents", "overview"]
+  },
+  {
+    "slug": "x402-pricing-strategies",
+    "title": "x402 Pricing Strategies: Maximizing Revenue",
+    "description": "Learn how to price your x402 API endpoints for maximum revenue. Covers per-request pricing, tiered models, and market positioning.",
+    "tags": ["business", "strategy"]
+  },
+  {
+    "slug": "x402-base-ethereum-solana",
+    "title": "Setting Up x402 on Base, Ethereum, and Solana",
+    "description": "Guide to deploying x402 services across different blockchains. Compare gas costs, settlement speed, and ecosystem support.",
+    "tags": ["tutorial", "blockchain"]
+  },
+  {
+    "slug": "x402-bazaar-bot-discovery",
+    "title": "x402 Bazaar: How Bots Discover Your API",
+    "description": "Learn how x402 Bazaar works as a discovery layer for AI agents to find and consume your API services automatically.",
+    "tags": ["discovery", "ai-agents"]
+  },
+  {
+    "slug": "usdc-micropayments-x402-deep-dive",
+    "title": "USDC Micropayments with x402: Technical Deep Dive",
+    "description": "Technical breakdown of how x402 processes USDC micropayments, including EIP-3009 authorization, facilitator verification, and settlement.",
+    "tags": ["technical", "payments"]
+  },
+  {
+    "slug": "x402scan-marketplace-listing",
+    "title": "x402scan Marketplace: Getting Listed and Found",
+    "description": "How to get your x402 service listed on x402scan, optimize your listing, and attract more AI agent customers.",
+    "tags": ["marketplace", "discovery"]
+  },
+  {
+    "slug": "x402-security-best-practices",
+    "title": "Security Best Practices for x402 Services",
+    "description": "Protect your x402 service from replay attacks, overpayment exploits, and facilitate verification bypasses. Essential security guide.",
+    "tags": ["security", "developer"]
+  },
+  {
+    "slug": "x402-payment-flow-explained",
+    "title": "x402 Payment Flow Explained Step by Step",
+    "description": "Visual walkthrough of the complete x402 payment flow from HTTP 402 response to USDC settlement. Every step explained.",
+    "tags": ["overview", "technical"]
+  },
+  {
+    "slug": "comparing-x402-facilitators",
+    "title": "Comparing x402 Facilitators: Features and Fees",
+    "description": "Detailed comparison of all x402 facilitators including fee structures, supported chains, verification speed, and reliability.",
+    "tags": ["comparison", "facilitator"]
+  },
+  {
+    "slug": "future-ai-agent-commerce-x402",
+    "title": "The Future of AI Agent Commerce with x402",
+    "description": "Explore where x402 and AI agent payments are heading. Market predictions, emerging use cases, and the road to autonomous commerce.",
+    "tags": ["opinion", "future"]
+  }
+]

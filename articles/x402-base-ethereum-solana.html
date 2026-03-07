@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setting Up x402 on Base, Ethereum, and Solana — x402 Guide</title>
+  <meta name="description" content="Guide to deploying x402 services across different blockchains. Compare gas costs, settlement speed, and ecosystem support.">
+  <meta name="keywords" content="x402 protocol, tutorial, blockchain, AI agent payments, USDC micropayments">
+  <link rel="canonical" href="https://x402.guide/articles/x402-base-ethereum-solana.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Setting Up x402 on Base, Ethereum, and Solana">
+  <meta property="og:description" content="Guide to deploying x402 services across different blockchains. Compare gas costs, settlement speed, and ecosystem support.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/x402-base-ethereum-solana.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Setting Up x402 on Base, Ethereum, and Solana",
+    "description": "Guide to deploying x402 services across different blockchains. Compare gas costs, settlement speed, and ecosystem support.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2025-06-01",
+    "dateModified": "2025-06-01",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/x402-base-ethereum-solana.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>Setting Up x402 on Base, Ethereum, and Solana</h1>
+    <div class="meta">
+      <span class="tag">tutorial</span> <span class="tag">blockchain</span> &middot; x402 Guide
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>Introduction</h2>
+
+<p>The x402 protocol revolutionizes how services handle machine-to-machine payments by leveraging the HTTP 402 "Payment Required" status code alongside USDC stablecoin transactions. While x402 was initially optimized for Base L2 due to its low transaction costs and fast settlement times, the protocol's flexibility allows deployment across multiple blockchain networks including Ethereum mainnet and Solana.</p>
+
+<p>This comprehensive guide walks you through setting up x402 services on each supported blockchain, comparing their unique characteristics, costs, and implementation considerations. Whether you're building the next <a href="https://askclaude.shop" target="_blank">AskClaude.shop</a>-style AI service or exploring micropayment infrastructure for your API, understanding multi-chain deployment strategies is crucial for maximizing reach and minimizing costs.</p>
+
+<h2>Why Multi-Chain x402 Deployment Matters</h2>
+
+<p>Different blockchain networks offer distinct advantages for x402 services. Base L2 provides ultra-low transaction fees perfect for micropayments, Ethereum offers maximum liquidity and ecosystem maturity, while Solana delivers high throughput and sub-second confirmation times. By supporting multiple chains, your x402 service can:</p>
+
+<ul>
+<li>Reduce payment friction by meeting users on their preferred network</li>
+<li>Optimize costs based on payment size and frequency patterns</li>
+<li>Increase resilience through network diversification</li>
+<li>Access different facilitator options and fee structures</li>
+<li>Tap into chain-specific ecosystems and communities</li>
+</ul>
+
+<p>Understanding the <a href="../articles/x402-payment-flow-explained.html">x402 payment flow</a> is essential before diving into chain-specific implementations, as the core protocol remains consistent across networks while only the underlying settlement mechanics change.</p>
+
+<h2>Setting Up x402 on Base L2</h2>
+
+<h3>Why Choose Base for x402</h3>
+
+<p>Base, Coinbase's Ethereum Layer 2 solution, represents the optimal network for x402 deployments. With transaction fees typically under $0.01 and 2-second block times, Base enables true micropayment scenarios that would be economically unfeasible on Ethereum mainnet.</p>
+
+<p>Key Base advantages for x402:</p>
+<ul>
+<li>Native USDC support with 1:1 Ethereum backing</li>
+<li>Coinbase CDP Facilitator integration</li>
+<li>Sub-penny transaction costs</li>
+<li>Ethereum security inheritance</li>
+<li>Growing ecosystem of AI and automation tools</li>
+</ul>
+
+<h3>Base Implementation Setup</h3>
+
+<p>First, install the necessary dependencies for Base x402 integration:</p>
+
+<pre><code>npm install @anthropic-ai/sdk ethers @coinbase/cdp-sdk
+npm install express cors helmet</code></pre>
+
+<p>Configure your Base network connection:</p>
+
+<pre><code>import { ethers } from 'ethers';
+
+const BASE_RPC = 'https://mainnet.base.org';
+const BASE_CHAIN_ID = 8453;
+const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+const provider = new ethers.JsonRpcProvider(BASE_RPC);
+const contract = new ethers.Contract(
+  USDC_BASE,
+  ['function transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32) external'],
+  provider
+);</code></pre>
+
+<p>Create your Base x402 service endpoint:</p>
+
+<pre><code>import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+app.get('/api/query', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader?.startsWith('x402')) {
+    return res.status(402).json({
+      protocol: 'x402',
+      amount: '1000000', // $1 USDC (6 decimals)
+      currency: 'USDC',
+      network: 'base',
+      facilitator: 'https://api.cdp.coinbase.com/x402/facilitator',
+      recipient: '0x742d35Cc6634C0532925a3b8D69B1F8b8C4bb8C6',
+      memo: 'AI Query Service Payment'
+    });
+  }
+
+  // Verify payment with facilitator
+  const paymentValid = await verifyBasePayment(authHeader);
+  if (!paymentValid) {
+    return res.status(402).json({ error: 'Payment verification failed' });
+  }
+
+  // Deliver service
+  res.json({ response: 'Your AI query result...' });
+});</code></pre>
+
+<h3>Base Network Configuration</h3>
+
+<p>When deploying on Base, configure these network-specific parameters:</p>
+
+<pre><code>const BASE_CONFIG = {
+  networkId: 8453,
+  rpcUrl: 'https://mainnet.base.org',
+  usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  blockTime: 2, // seconds
+  confirmations: 1, // Base finality is fast
+  gasLimit: 21000,
+  maxGasPrice: ethers.parseUnits('0.01', 'gwei')
+};</code></pre>
+
+<h2>Setting Up x402 on Ethereum Mainnet</h2>
+
+<h3>Ethereum Considerations</h3>
+
+<p>Ethereum mainnet offers the highest liquidity and most mature DeFi ecosystem but comes with significantly higher transaction costs. Ethereum x402 services work best for higher-value transactions where the $5-50 gas fees represent a small percentage of the payment amount.</p>
+
+<p>Ethereum advantages:</p>
+<ul>
+<li>Maximum network security and decentralization</li>
+<li>Largest USDC liquidity pool</li>
+<li>Most mature facilitator options</li>
+<li>Extensive DeFi integration possibilities</li>
+<li>Battle-tested smart contract infrastructure</li>
+</ul>
+
+<h3>Ethereum Setup Process</h3>
+
+<p>Configure Ethereum mainnet for x402:</p>
+
+<pre><code>const ETHEREUM_CONFIG = {
+  networkId: 1,
+  rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key',
+  usdcAddress: '0xA0b86a33E6e94e5bBb17A2A4f6Eb49dF3c9fB2c0',
+  blockTime: 12, // seconds
+  confirmations: 3, // Wait for finality
+  gasLimit: 50000,
+  maxGasPrice: ethers.parseUnits('30', 'gwei')
+};
+
+const ethereumProvider = new ethers.JsonRpcProvider(ETHEREUM_CONFIG.rpcUrl);</code></pre>
+
+<p>Handle Ethereum's variable gas costs dynamically:</p>
+
+<pre><code>async function calculateEthereumFees() {
+  const gasPrice = await ethereumProvider.getFeeData();
+  const estimatedGas = 21000n; // Basic USDC transfer
+  
+  const totalGasCost = gasPrice.gasPrice * estimatedGas;
+  const gasCostUSD = await convertWeiToUSD(totalGasCost);
+  
+  // Only proceed if gas cost is reasonable relative to payment
+  return gasCostUSD < paymentAmount * 0.1; // Max 10% gas overhead
+}</code></pre>
+
+<p>Implement Ethereum-specific payment verification:</p>
+
+<pre><code>async function verifyEthereumPayment(authHeader, expectedAmount) {
+  try {
+    const paymentData = parseX402Header(authHeader);
+    
+    // Check transaction on Ethereum
+    const tx = await ethereumProvider.getTransaction(paymentData.txHash);
+    const receipt = await ethereumProvider.getTransactionReceipt(paymentData.txHash);
+    
+    if (receipt.status !== 1) return false;
+    if (receipt.confirmations < ETHEREUM_CONFIG.confirmations) return false;
+    
+    // Verify USDC transfer amount and recipient
+    const transferLog = receipt.logs.find(log => 
+      log.address.toLowerCase() === ETHEREUM_CONFIG.usdcAddress.toLowerCase()
+    );
+    
+    return verifyTransferLog(transferLog, expectedAmount);
+  } catch (error) {
+    console.error('Ethereum payment verification failed:', error);
+    return false;
+  }
+}</code></pre>
+
+<h2>Setting Up x402 on Solana</h2>
+
+<h3>Solana's Unique Advantages</h3>
+
+<p>Solana brings exceptional speed and low costs to x402 implementations, with 400ms block times and transaction fees under $0.001. However, Solana requires different technical approaches due to its account-based model and different programming paradigms.</p>
+
+<p>Solana benefits for x402:</p>
+<ul>
+<li>Ultra-fast transaction finality (400ms blocks)</li>
+<li>Negligible transaction fees (< $0.001)</li>
+<li>High throughput (65,000+ TPS theoretical)</li>
+<li>Native USDC support via Circle</li>
+<li>Growing AI and automation ecosystem</li>
+</ul>
+
+<h3>Solana Implementation Differences</h3>
+
+<p>Solana x402 requires the @solana/web3.js library instead of ethers:</p>
+
+<pre><code>npm install @solana/web3.js @solana/spl-token</code></pre>
+
+<p>Configure Solana connection:</p>
+
+<pre><code>import { Connection, PublicKey } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+
+const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+const USDC_SOLANA = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+const connection = new Connection(SOLANA_RPC, 'confirmed');
+const usdcMint = new PublicKey(USDC_SOLANA);</code></pre>
+
+<p>Handle Solana's account-based payment verification:</p>
+
+<pre><code>async function verifySolanaPayment(signature, expectedAmount, recipient) {
+  try {
+    const tx = await connection.getTransaction(signature, {
+      commitment: 'confirmed'
+    });
+    
+    if (!tx || tx.meta.err) return false;
+    
+    // Find USDC transfer in transaction
+    const transferInstruction = tx.transaction.message.instructions.find(ix => 
+      tx.transaction.message.accountKeys[ix.programIdIndex].equals(TOKEN_PROGRAM_ID)
+    );
+    
+    if (!transferInstruction) return false;
+    
+    // Verify transfer details match expected payment
+    return verifyTransferAmount(transferInstruction, expectedAmount, recipient);
+  } catch (error) {
+    console.error('Solana payment verification failed:', error);
+    return false;
+  }
+}</code></pre>
+
+<h3>Solana x402 Service Configuration</h3>
+
+<pre><code>const SOLANA_CONFIG = {
+  cluster: 'mainnet-beta',
+  rpcUrl: 'https://api.mainnet-beta.solana.com',
+  usdcMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  blockTime: 0.4, // 400ms
+  confirmations: 'confirmed', // Solana confirmation level
+  fees: 0.000005 // ~$0.001 at current SOL prices
+};</code></pre>
+
+<h2>Blockchain Comparison: Costs and Performance</h2>
+
+<h3>Transaction Cost Analysis</h3>
+
+<p>Understanding the cost implications of each network helps determine optimal deployment strategies:</p>
+
+<table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+  <thead>
+    <tr style="border-bottom: 2px solid #ddd;">
+      <th style="padding: 10px; text-align: left;">Network</th>
+      <th style="padding: 10px; text-align: left;">Avg Gas Cost</th>
+      <th style="padding: 10px; text-align: left;">Settlement Time</th>
+      <th style="padding: 10px; text-align: left;">Best For</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 10px;">Base L2</td>
+      <td style="padding: 10px;">$0.005 - $0.01</td>
+      <td style="padding: 10px;">2-4 seconds</td>
+      <td style="padding: 10px;">Micropayments, high frequency</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 10px;">Ethereum</td>
+      <td style="padding: 10px;">$5 - $50</td>
+      <td style="padding: 10px;">12-60 seconds</td>
+      <td style="padding: 10px;">High-value transactions</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 10px;">Solana</td>
+      <td style="padding: 10px;">$0.0005</td>
+      <td style="padding: 10px;">400ms - 1.5s</td>
+      <td style="padding: 10px;">Ultra-fast, ultra-cheap</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Performance Benchmarks</h3>
+
+<p>Based on real-world testing across networks:</p>
+
+<ul>
+<li><strong>Base</strong>: Optimal balance of cost and speed for most x402 use cases</li>
+<li><strong>Ethereum</strong>: Best liquidity but expensive for small payments</li>
+<li><strong>Solana</strong>: Fastest and cheapest but requires different technical approach</li>
+</ul>
+
+<h2>Facilitator Support Across Networks</h2>
+
+<p>Different facilitators offer varying levels of support across blockchain networks. Understanding these differences is crucial for <a href="../articles/comparing-x402-facilitators.html">choosing the right facilitator</a> for your multi-chain strategy:</p>
+
+<h3>Coinbase CDP Facilitator</h3>
+<ul>
+<li>Native Base L2 support with optimized routing</li>
+<li>Full Ethereum mainnet integration</li>
+<li>Limited Solana support (beta)</li>
+<li>Lowest fees on Base due to Coinbase ecosystem integration</li>
+</ul>
+
+<h3>UltravioletaDAO</h3>
+<ul>
+<li>Multi-chain support across all networks</li>
+<li>Decentralized governance and fee structures</li>
+<li>Community-driven protocol improvements</li>
+<li>Competitive fees across all supported chains</li>
+</ul>
+
+<h2>Multi-Chain Deployment Strategy</h2>
+
+<h3>Network Selection Logic</h3>
+
+<p>Implement intelligent network selection based on payment characteristics:</p>
+
+<pre><code>function selectOptimalNetwork(paymentAmount, urgency, userPreference) {
+  // For micropayments under $1
+  if (paymentAmount < 1) {
+    return userPreference === 'solana' ? 'solana' : 'base';
+  }
+  
+  // For medium payments $1-$100
+  if (paymentAmount < 100) {
+    if (urgency === 'high') return 'solana';
+    return 'base'; // Good balance of cost and reliability
+  }
+  
+  // For high-value payments over $100
+  if (paymentAmount >= 100) {
+    return 'ethereum'; // Security and liqu
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402-Powered Service</h3>
+    <p>AskClaude.shop is a live x402 service — AI agents pay per query with USDC micropayments.</p>
+    <a href="https://askclaude.shop" class="btn" target="_blank" rel="noopener">Visit AskClaude.shop</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="what-is-x402-protocol.html" class="article-card">
+      <h3>What is x402 Protocol? Complete Beginner Guide</h3>
+      <p>Learn what the x402 protocol is, how it enables machine-to-machine payments using HTTP 402, and why it matters for AI agent commerce.</p>
+    </a>
+    <a href="how-to-accept-x402-payments-api.html" class="article-card">
+      <h3>How to Accept x402 Payments in Your API</h3>
+      <p>Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.</p>
+    </a>
+    <a href="x402-vs-traditional-api-billing.html" class="article-card">
+      <h3>x402 vs Traditional API Billing: Cost Comparison</h3>
+      <p>Compare x402 micropayments against subscription models, API keys, and usage-based billing. See the real cost breakdown.</p>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>

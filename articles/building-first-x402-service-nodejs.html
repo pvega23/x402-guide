@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Your First x402 Service with Node.js — x402 Guide</title>
+  <meta name="description" content="Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.">
+  <meta name="keywords" content="x402 protocol, tutorial, developer, AI agent payments, USDC micropayments">
+  <link rel="canonical" href="https://x402.guide/articles/building-first-x402-service-nodejs.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Building Your First x402 Service with Node.js">
+  <meta property="og:description" content="Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/building-first-x402-service-nodejs.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Building Your First x402 Service with Node.js",
+    "description": "Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2025-06-01",
+    "dateModified": "2025-06-01",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/building-first-x402-service-nodejs.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>Building Your First x402 Service with Node.js</h1>
+    <div class="meta">
+      <span class="tag">tutorial</span> <span class="tag">developer</span> &middot; x402 Guide
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>Introduction to Building x402-Enabled Services</h2>
+
+<p>The x402 protocol is revolutionizing how APIs monetize their services through micropayments, enabling developers to build usage-based revenue models with USDC cryptocurrency. If you're looking to implement pay-per-use functionality in your Node.js applications, this comprehensive guide will walk you through creating your first x402-enabled service from scratch.</p>
+
+<p>By the end of this tutorial, you'll have a fully functional API that can accept micropayments for data access, similar to how <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a> charges users for AI query responses. We'll cover everything from initial setup to deployment, including proper error handling and security considerations.</p>
+
+<h2>Prerequisites and Environment Setup</h2>
+
+<p>Before diving into code, ensure you have the following prerequisites installed and configured on your development machine:</p>
+
+<ul>
+<li>Node.js version 18 or higher</li>
+<li>npm or yarn package manager</li>
+<li>Basic understanding of Express.js and REST APIs</li>
+<li>A text editor or IDE of your choice</li>
+<li>Access to a blockchain wallet for testing payments</li>
+</ul>
+
+<p>We'll also need to understand the <a href="../articles/x402-payment-flow-explained.html">x402 payment flow</a> at a high level. When a client requests a paid resource, your server responds with a 402 Payment Required status, the client authorizes a USDC payment, and then resubmits the request with payment proof for the facilitator to verify.</p>
+
+<h3>Project Initialization</h3>
+
+<p>Let's start by creating a new Node.js project and installing the necessary dependencies:</p>
+
+<pre><code>mkdir my-x402-service
+cd my-x402-service
+npm init -y
+
+# Install core dependencies
+npm install express cors helmet morgan dotenv
+npm install @coinbase/coinbase-sdk
+
+# Install development dependencies
+npm install --save-dev nodemon
+</code></pre>
+
+<p>Create a basic project structure that will keep our code organized:</p>
+
+<pre><code>mkdir src
+mkdir src/routes
+mkdir src/middleware
+mkdir src/utils
+mkdir src/config
+touch src/app.js
+touch src/server.js
+touch .env
+touch .gitignore
+</code></pre>
+
+<h2>Implementing Core x402 Middleware</h2>
+
+<p>The heart of any x402 service is the middleware that handles payment verification. Let's create a robust middleware system that can be easily applied to any route that requires payment.</p>
+
+<h3>Creating the Payment Middleware</h3>
+
+<p>First, let's create the main x402 middleware in <code>src/middleware/x402.js</code>:</p>
+
+<pre><code>const crypto = require('crypto');
+
+class X402Middleware {
+  constructor(options = {}) {
+    this.facilitatorUrl = options.facilitatorUrl || 'https://api.coinbase.com/v2/x402';
+    this.defaultPrice = options.defaultPrice || '0.01'; // 1 cent in USDC
+    this.network = options.network || 'base';
+    this.merchantAddress = options.merchantAddress;
+    this.apiKey = options.apiKey;
+  }
+
+  // Generate payment challenge
+  generateChallenge(req) {
+    const timestamp = Date.now();
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const resource = req.originalUrl;
+    
+    return {
+      timestamp,
+      nonce,
+      resource,
+      amount: this.defaultPrice,
+      currency: 'USDC',
+      network: this.network,
+      merchant: this.merchantAddress,
+      facilitator: this.facilitatorUrl
+    };
+  }
+
+  // Main middleware function
+  requirePayment(options = {}) {
+    return async (req, res, next) => {
+      try {
+        // Check for payment header
+        const paymentHeader = req.headers['x-payment-authorization'];
+        
+        if (!paymentHeader) {
+          // No payment provided, return 402 with payment details
+          const challenge = this.generateChallenge(req);
+          
+          res.status(402).json({
+            error: 'Payment Required',
+            payment: {
+              amount: options.price || this.defaultPrice,
+              currency: 'USDC',
+              network: this.network,
+              facilitator: this.facilitatorUrl,
+              merchant: this.merchantAddress,
+              challenge: challenge.nonce,
+              expires: new Date(Date.now() + 300000).toISOString() // 5 minutes
+            }
+          });
+          return;
+        }
+
+        // Verify payment with facilitator
+        const isValid = await this.verifyPayment(paymentHeader, req);
+        
+        if (!isValid) {
+          res.status(402).json({
+            error: 'Invalid payment authorization',
+            details: 'Payment could not be verified with facilitator'
+          });
+          return;
+        }
+
+        // Payment verified, proceed to route handler
+        req.x402 = {
+          paid: true,
+          amount: options.price || this.defaultPrice,
+          paymentId: this.extractPaymentId(paymentHeader)
+        };
+        
+        next();
+      } catch (error) {
+        console.error('x402 middleware error:', error);
+        res.status(500).json({
+          error: 'Payment verification failed',
+          details: 'Internal server error during payment processing'
+        });
+      }
+    };
+  }
+
+  // Verify payment with facilitator
+  async verifyPayment(paymentHeader, req) {
+    try {
+      const paymentData = JSON.parse(
+        Buffer.from(paymentHeader, 'base64').toString('utf-8')
+      );
+
+      const response = await fetch(`${this.facilitatorUrl}/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          authorization: paymentData,
+          resource: req.originalUrl,
+          merchant: this.merchantAddress
+        })
+      });
+
+      const result = await response.json();
+      return response.ok && result.valid === true;
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      return false;
+    }
+  }
+
+  extractPaymentId(paymentHeader) {
+    try {
+      const paymentData = JSON.parse(
+        Buffer.from(paymentHeader, 'base64').toString('utf-8')
+      );
+      return paymentData.transactionId || paymentData.id;
+    } catch {
+      return null;
+    }
+  }
+}
+
+module.exports = X402Middleware;
+</code></pre>
+
+<h3>Configuration Management</h3>
+
+<p>Create a configuration file in <code>src/config/index.js</code> to manage environment variables and settings:</p>
+
+<pre><code>require('dotenv').config();
+
+const config = {
+  port: process.env.PORT || 3000,
+  nodeEnv: process.env.NODE_ENV || 'development',
+  
+  // x402 Configuration
+  x402: {
+    facilitatorUrl: process.env.X402_FACILITATOR_URL || 'https://api.coinbase.com/v2/x402',
+    merchantAddress: process.env.MERCHANT_WALLET_ADDRESS,
+    apiKey: process.env.FACILITATOR_API_KEY,
+    network: process.env.BLOCKCHAIN_NETWORK || 'base',
+    defaultPrice: process.env.DEFAULT_PRICE || '0.01'
+  },
+  
+  // API Configuration
+  api: {
+    rateLimitWindow: 15 * 60 * 1000, // 15 minutes
+    rateLimitMax: 100, // requests per window
+    corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000']
+  }
+};
+
+// Validation
+if (!config.x402.merchantAddress) {
+  throw new Error('MERCHANT_WALLET_ADDRESS environment variable is required');
+}
+
+if (!config.x402.apiKey) {
+  throw new Error('FACILITATOR_API_KEY environment variable is required');
+}
+
+module.exports = config;
+</code></pre>
+
+<h2>Building Service Routes</h2>
+
+<p>Now let's create some practical API endpoints that demonstrate different x402 use cases. We'll build a data service similar to what you might find on x402scan marketplace.</p>
+
+<h3>Weather Data Service</h3>
+
+<p>Create <code>src/routes/weather.js</code> with a simple weather API that charges per request:</p>
+
+<pre><code>const express = require('express');
+const router = express.Router();
+
+// Mock weather data - in production, you'd integrate with a real weather API
+const weatherData = {
+  'new-york': {
+    city: 'New York',
+    temperature: 22,
+    humidity: 65,
+    conditions: 'Partly cloudy',
+    windSpeed: 12,
+    pressure: 1013.25,
+    lastUpdated: new Date().toISOString()
+  },
+  'london': {
+    city: 'London',
+    temperature: 15,
+    humidity: 78,
+    conditions: 'Overcast',
+    windSpeed: 8,
+    pressure: 1008.12,
+    lastUpdated: new Date().toISOString()
+  },
+  'tokyo': {
+    city: 'Tokyo',
+    temperature: 28,
+    humidity: 82,
+    conditions: 'Sunny',
+    windSpeed: 6,
+    pressure: 1015.33,
+    lastUpdated: new Date().toISOString()
+  }
+};
+
+// Get current weather for a city (costs 0.01 USDC)
+router.get('/current/:city', (req, res) => {
+  const { city } = req.params;
+  const normalizedCity = city.toLowerCase().replace(/\s+/g, '-');
+  
+  const weather = weatherData[normalizedCity];
+  
+  if (!weather) {
+    return res.status(404).json({
+      error: 'City not found',
+      availableCities: Object.keys(weatherData).map(key => 
+        weatherData[key].city
+      )
+    });
+  }
+  
+  res.json({
+    success: true,
+    data: weather,
+    payment: {
+      amount: req.x402?.amount || '0.01',
+      paymentId: req.x402?.paymentId
+    }
+  });
+});
+
+// Get weather forecast (costs 0.05 USDC - more expensive)
+router.get('/forecast/:city', (req, res) => {
+  const { city } = req.params;
+  const normalizedCity = city.toLowerCase().replace(/\s+/g, '-');
+  
+  const currentWeather = weatherData[normalizedCity];
+  
+  if (!currentWeather) {
+    return res.status(404).json({
+      error: 'City not found',
+      availableCities: Object.keys(weatherData).map(key => 
+        weatherData[key].city
+      )
+    });
+  }
+  
+  // Generate mock 5-day forecast
+  const forecast = [];
+  for (let i = 1; i <= 5; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    
+    forecast.push({
+      date: date.toISOString().split('T')[0],
+      temperature: currentWeather.temperature + Math.floor(Math.random() * 10) - 5,
+      conditions: ['Sunny', 'Partly cloudy', 'Overcast', 'Light rain'][
+        Math.floor(Math.random() * 4)
+      ],
+      humidity: Math.floor(Math.random() * 40) + 40
+    });
+  }
+  
+  res.json({
+    success: true,
+    data: {
+      city: currentWeather.city,
+      current: currentWeather,
+      forecast
+    },
+    payment: {
+      amount: req.x402?.amount || '0.05',
+      paymentId: req.x402?.paymentId
+    }
+  });
+});
+
+module.exports = router;
+</code></pre>
+
+<h3>AI Text Analysis Service</h3>
+
+<p>Let's create another service in <code>src/routes/analysis.js</code> that provides text analysis capabilities:</p>
+
+<pre><code>const express = require('express');
+const router = express.Router();
+
+// Simple text analysis functions
+function analyzeText(text) {
+  const words = text.split(/\s+/).filter(word => word.length > 0);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  
+  // Simple sentiment analysis (mock implementation)
+  const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic'];
+  const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'disappointing'];
+  
+  let sentiment = 0;
+  words.forEach(word => {
+    const lowerWord = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (positiveWords.includes(lowerWord)) sentiment++;
+    if (negativeWords.includes(lowerWord)) sentiment--;
+  });
+  
+  return {
+    wordCount: words.length,
+    sentenceCount: sentences.length,
+    paragraphCount: paragraphs.length,
+    averageWordsPerSentence: Math.round(words.length / Math.max(sentences.length, 1)),
+    sentiment: sentiment > 0 ? 'positive' : sentiment < 0 ? 'negative' : 'neutral',
+    sentimentScore: sentiment,
+    readingTime: Math.ceil(words.length / 200) // assuming 200 words per minute
+  };
+}
+
+// Text analysis endpoint (costs 0.02 USDC)
+router.post('/text', (req, res) => {
+  const { text } = req.body;
+  
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({
+      error: 'Invalid input',
+      details: 'Text field is required and must be a string'
+    });
+  }
+  
+  if (text.length > 10000) {
+    return res.status(400).json({
+      error: 'Text too long',
+      details: 'Maximum text length is 10,000 characters'
+    });
+  }
+  
+  const analysis = analyzeText(text);
+  
+  res.json({
+    success: true,
+    data: analysis,
+    payment: {
+      amount: req.x402?.amount || '0.02',
+      paymentId: req.x402?.paymentId
+    }
+  });
+});
+
+module.exports = router;
+</code></pre>
+
+<h2>Setting Up the Express Application</h2>
+
+<p>Now let's tie everything together in our main application file. Create <code>src/app.js</code>:</p>
+
+<pre><code>const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
+const config = require('./config');
+const X402Middleware = require('./middleware/x402');
+
+// Import routes
+const weatherRoutes = require('./routes/weather');
+const analysisRoutes = require('./routes/analysis');
+
+// Initialize Express app
+const app = express();
+
+// Initialize x402 middleware
+const x402 = new X402Middleware({
+  facilitatorUrl: config.x402.facilitatorUrl,
+  merchantAddress: config.x402.merchantAddress,
+  apiKey: config.x402.apiKey,
+  network: config.x402.network,
+  defaultPrice: config.x402.defaultPrice
+});
+
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: config.api.corsOrigins,
+  credentials: true
+}));
+
+// Logging and parsing middleware
+if (config.nodeEnv !== 'test') {
+  app.use(morgan('combined'));
+}
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402-Powered Service</h3>
+    <p>AskClaude.shop is a live x402 service — AI agents pay per query with USDC micropayments.</p>
+    <a href="https://askclaude.shop" class="btn" target="_blank" rel="noopener">Visit AskClaude.shop</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="what-is-x402-protocol.html" class="article-card">
+      <h3>What is x402 Protocol? Complete Beginner Guide</h3>
+      <p>Learn what the x402 protocol is, how it enables machine-to-machine payments using HTTP 402, and why it matters for AI agent commerce.</p>
+    </a>
+    <a href="how-to-accept-x402-payments-api.html" class="article-card">
+      <h3>How to Accept x402 Payments in Your API</h3>
+      <p>Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.</p>
+    </a>
+    <a href="x402-vs-traditional-api-billing.html" class="article-card">
+      <h3>x402 vs Traditional API Billing: Cost Comparison</h3>
+      <p>Compare x402 micropayments against subscription models, API keys, and usage-based billing. See the real cost breakdown.</p>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>

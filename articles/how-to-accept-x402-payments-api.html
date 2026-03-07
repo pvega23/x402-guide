@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Accept x402 Payments in Your API — x402 Guide</title>
+  <meta name="description" content="Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.">
+  <meta name="keywords" content="x402 protocol, tutorial, developer, AI agent payments, USDC micropayments">
+  <link rel="canonical" href="https://x402.guide/articles/how-to-accept-x402-payments-api.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="How to Accept x402 Payments in Your API">
+  <meta property="og:description" content="Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/how-to-accept-x402-payments-api.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Accept x402 Payments in Your API",
+    "description": "Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2025-06-01",
+    "dateModified": "2025-06-01",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/how-to-accept-x402-payments-api.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>How to Accept x402 Payments in Your API</h1>
+    <div class="meta">
+      <span class="tag">tutorial</span> <span class="tag">developer</span> &middot; x402 Guide
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>Getting Started with x402 Payment Integration</h2>
+
+<p>The x402 protocol represents a paradigm shift in how APIs can monetize their services through seamless machine-to-machine payments. Rather than dealing with traditional billing systems, API keys, or subscription models, x402 enables your API to request payment directly using the HTTP 402 status code and receive instant USDC micropayments. This comprehensive guide will walk you through implementing x402 payment support in your existing API, transforming it into a revenue-generating service that can be discovered and used by AI agents worldwide.</p>
+
+<p>If you're new to the protocol, we recommend first reading our <a href="../articles/what-is-x402-protocol.html">complete beginner's guide to x402</a> to understand the foundational concepts. For those ready to dive into implementation, let's explore how to add payment functionality to your API endpoints step by step.</p>
+
+<h2>Prerequisites and Dependencies</h2>
+
+<p>Before implementing x402 payments, you'll need to set up several components. First, ensure your development environment has Node.js installed, as we'll be using the official x402 middleware packages. You'll also need to choose a blockchain network for receiving payments—Base L2 is recommended for lower fees, though Ethereum mainnet and Solana are also supported.</p>
+
+<p>Install the necessary packages for your server implementation:</p>
+
+<pre><code>npm install express @x402/middleware @x402/facilitator-client
+npm install ethers dotenv</code></pre>
+
+<p>You'll also need to select a facilitator service to handle payment verification and settlement. The two main options are Coinbase's CDP Facilitator and UltravioletaDAO, each with different features and fee structures. For detailed comparison, check our analysis of <a href="../articles/ultravioletadao-vs-cdp-facilitator.html">UltravioletaDAO vs CDP Facilitator</a> to determine which best fits your needs.</p>
+
+<h2>Basic x402 Middleware Integration</h2>
+
+<p>The simplest way to add x402 support is through Express middleware that automatically handles the payment flow. Here's a basic implementation that protects specific API endpoints:</p>
+
+<pre><code>const express = require('express');
+const { x402Middleware } = require('@x402/middleware');
+const app = express();
+
+// Configure x402 middleware
+const x402Config = {
+  facilitatorUrl: 'https://facilitator.coinbase.com',
+  receiverAddress: '0x742d35Cc6634C0532925a3b8D6Ac0C0ec47bcb7',
+  network: 'base',
+  pricing: {
+    '/api/premium-data': '0.01', // $0.01 USDC per request
+    '/api/ai-inference': '0.005', // $0.005 USDC per request
+  }
+};
+
+// Apply x402 to specific routes
+app.use('/api/premium-data', x402Middleware(x402Config));
+app.use('/api/ai-inference', x402Middleware(x402Config));
+
+// Your existing API endpoints
+app.get('/api/premium-data', (req, res) => {
+  // This endpoint now requires payment
+  res.json({
+    data: "Premium data that requires payment",
+    timestamp: new Date().toISOString(),
+    user: req.x402?.payer || 'anonymous'
+  });
+});
+
+app.get('/api/ai-inference', (req, res) => {
+  const { query } = req.query;
+  
+  // Simulate AI processing
+  res.json({
+    query: query,
+    response: "AI-generated response to: " + query,
+    model: "gpt-4",
+    cost: "0.005 USDC"
+  });
+});
+
+app.listen(3000, () => {
+  console.log('x402-enabled API running on port 3000');
+});</code></pre>
+
+<p>This middleware automatically handles the x402 payment flow. When a client makes a request without payment, it returns a 402 status with payment details. When the client resends with proper payment authorization, the middleware verifies the payment with the facilitator before allowing access to your endpoint.</p>
+
+<h2>Custom Payment Logic Implementation</h2>
+
+<p>For more granular control over payment logic, you can implement custom x402 handling. This approach gives you flexibility for dynamic pricing, usage-based billing, or complex business rules:</p>
+
+<pre><code>const { FacilitatorClient } = require('@x402/facilitator-client');
+
+// Initialize facilitator client
+const facilitator = new FacilitatorClient({
+  url: 'https://facilitator.coinbase.com',
+  apiKey: process.env.FACILITATOR_API_KEY
+});
+
+// Custom middleware for dynamic pricing
+async function dynamicX402Middleware(req, res, next) {
+  const paymentHeader = req.headers['x-payment-authorization'];
+  
+  if (!paymentHeader) {
+    // Calculate dynamic price based on request complexity
+    const basePrice = 0.01;
+    const complexity = calculateComplexity(req);
+    const price = (basePrice * complexity).toFixed(6);
+    
+    return res.status(402).json({
+      error: "Payment Required",
+      payment: {
+        amount: price,
+        currency: "USDC",
+        recipient: process.env.RECEIVER_ADDRESS,
+        network: "base",
+        facilitator: "https://facilitator.coinbase.com"
+      },
+      message: `This endpoint requires ${price} USDC payment`
+    });
+  }
+  
+  try {
+    // Verify payment with facilitator
+    const verification = await facilitator.verifyPayment(paymentHeader);
+    
+    if (verification.valid) {
+      req.x402 = {
+        payment: verification,
+        payer: verification.payer
+      };
+      next();
+    } else {
+      res.status(402).json({
+        error: "Invalid payment",
+        details: verification.reason
+      });
+    }
+  } catch (error) {
+    console.error('Payment verification failed:', error);
+    res.status(500).json({ error: "Payment processing error" });
+  }
+}
+
+function calculateComplexity(req) {
+  // Example complexity calculation
+  const { query } = req.query;
+  if (!query) return 1;
+  
+  if (query.length > 1000) return 3;
+  if (query.length > 500) return 2;
+  return 1;
+}</code></pre>
+
+<h2>Configuring Payment Recipients and Networks</h2>
+
+<p>Setting up proper payment configuration is crucial for receiving funds securely. You'll need to generate wallet addresses for each supported blockchain network and configure your facilitator accordingly.</p>
+
+<pre><code>// Environment configuration
+const config = {
+  networks: {
+    base: {
+      receiverAddress: process.env.BASE_RECEIVER_ADDRESS,
+      facilitatorUrl: 'https://facilitator.coinbase.com',
+      chainId: 8453
+    },
+    ethereum: {
+      receiverAddress: process.env.ETH_RECEIVER_ADDRESS,
+      facilitatorUrl: 'https://facilitator.coinbase.com',
+      chainId: 1
+    },
+    solana: {
+      receiverAddress: process.env.SOLANA_RECEIVER_ADDRESS,
+      facilitatorUrl: 'https://facilitator.ultravioleta.io',
+      cluster: 'mainnet-beta'
+    }
+  },
+  
+  // Default to Base L2 for lower fees
+  defaultNetwork: 'base'
+};
+
+// Network-aware payment handling
+function getPaymentConfig(preferredNetwork = 'base') {
+  const network = config.networks[preferredNetwork] || config.networks.base;
+  
+  return {
+    recipient: network.receiverAddress,
+    network: preferredNetwork,
+    facilitator: network.facilitatorUrl,
+    chainId: network.chainId
+  };
+}</code></pre>
+
+<p>For detailed setup instructions across different blockchains, refer to our guide on <a href="../articles/x402-base-ethereum-solana.html">setting up x402 on Base, Ethereum, and Solana</a>.</p>
+
+<h2>Implementing Usage-Based Pricing</h2>
+
+<p>One of x402's key advantages is enabling sophisticated pricing models that would be impractical with traditional billing. Here's how to implement usage-based pricing that charges based on actual resource consumption:</p>
+
+<pre><code>class UsageBasedPricing {
+  constructor() {
+    this.baseRates = {
+      'data-processing': 0.001, // per KB processed
+      'ai-inference': 0.01,     // per query
+      'compute-time': 0.0001    // per second
+    };
+  }
+  
+  calculatePrice(endpoint, usage) {
+    switch(endpoint) {
+      case '/api/process-data':
+        return (usage.dataSize / 1024) * this.baseRates['data-processing'];
+      
+      case '/api/ai-query':
+        const basePrice = this.baseRates['ai-inference'];
+        const complexityMultiplier = usage.tokenCount > 1000 ? 1.5 : 1.0;
+        return basePrice * complexityMultiplier;
+      
+      case '/api/compute':
+        return usage.executionTime * this.baseRates['compute-time'];
+      
+      default:
+        return 0.01; // Default price
+    }
+  }
+  
+  async processWithPayment(req, res, processingFunction) {
+    const paymentHeader = req.headers['x-payment-authorization'];
+    
+    if (!paymentHeader) {
+      // Estimate price based on request
+      const estimatedUsage = this.estimateUsage(req);
+      const estimatedPrice = this.calculatePrice(req.path, estimatedUsage);
+      
+      return res.status(402).json({
+        error: "Payment Required",
+        payment: {
+          amount: estimatedPrice.toFixed(6),
+          currency: "USDC",
+          recipient: process.env.RECEIVER_ADDRESS,
+          network: "base"
+        },
+        estimate: {
+          usage: estimatedUsage,
+          price: estimatedPrice
+        }
+      });
+    }
+    
+    // Process the request and measure actual usage
+    const startTime = Date.now();
+    const result = await processingFunction(req);
+    const actualUsage = {
+      ...this.measureUsage(req, result),
+      executionTime: (Date.now() - startTime) / 1000
+    };
+    
+    const actualPrice = this.calculatePrice(req.path, actualUsage);
+    
+    // Verify payment covers actual usage
+    const payment = await facilitator.verifyPayment(paymentHeader);
+    if (parseFloat(payment.amount) < actualPrice) {
+      return res.status(402).json({
+        error: "Insufficient payment",
+        required: actualPrice,
+        provided: payment.amount
+      });
+    }
+    
+    res.json({
+      result: result,
+      usage: actualUsage,
+      cost: actualPrice
+    });
+  }
+}</code></pre>
+
+<h2>Error Handling and Payment Verification</h2>
+
+<p>Robust error handling is essential for a production x402 service. Your API should gracefully handle payment failures, network issues, and edge cases:</p>
+
+<pre><code>async function handleX402Payment(req, res, next) {
+  try {
+    const paymentHeader = req.headers['x-payment-authorization'];
+    
+    if (!paymentHeader) {
+      return res.status(402).json({
+        error: "Payment Required",
+        payment: getPaymentDetails(req),
+        documentation: "https://x402guide.com/articles/x402-payment-flow-explained.html"
+      });
+    }
+    
+    // Parse and validate payment header
+    const paymentData = parsePaymentHeader(paymentHeader);
+    if (!paymentData.isValid) {
+      return res.status(400).json({
+        error: "Invalid payment format",
+        details: paymentData.errors
+      });
+    }
+    
+    // Verify payment with facilitator
+    const verification = await facilitator.verifyPayment(paymentHeader);
+    
+    if (!verification.success) {
+      const errorResponse = {
+        error: "Payment verification failed",
+        reason: verification.error,
+        code: verification.errorCode
+      };
+      
+      // Different status codes for different failures
+      switch(verification.errorCode) {
+        case 'INSUFFICIENT_FUNDS':
+          return res.status(402).json(errorResponse);
+        case 'EXPIRED_AUTHORIZATION':
+          return res.status(401).json(errorResponse);
+        case 'NETWORK_ERROR':
+          return res.status(503).json(errorResponse);
+        default:
+          return res.status(400).json(errorResponse);
+      }
+    }
+    
+    // Payment successful, attach to request
+    req.x402 = {
+      payment: verification,
+      payer: verification.payer,
+      amount: verification.amount,
+      timestamp: verification.timestamp
+    };
+    
+    next();
+    
+  } catch (error) {
+    console.error('x402 payment processing error:', error);
+    res.status(500).json({
+      error: "Internal payment processing error",
+      message: "Please try again later"
+    });
+  }
+}
+
+function parsePaymentHeader(header) {
+  try {
+    const decoded = Buffer.from(header, 'base64').toString('utf8');
+    const payment = JSON.parse(decoded);
+    
+    const required = ['signature', 'authorization', 'amount', 'recipient'];
+    const missing = required.filter(field => !payment[field]);
+    
+    return {
+      isValid: missing.length === 0,
+      errors: missing.length > 0 ? `Missing fields: ${missing.join(', ')}` : null,
+      data: payment
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      errors: 'Invalid base64 encoding or JSON format',
+      data: null
+    };
+  }
+}</code></pre>
+
+<h2>Testing Your x402 Implementation</h2>
+
+<p>Thorough testing is crucial before deploying your x402-enabled API. Here's a comprehensive test suite that covers the payment flow:</p>
+
+<pre><code>const request = require('supertest');
+const app = require('./your-api-app');
+
+describe('x402 Payment Flow', () => {
+  test('Returns 402 when no payment provided', async () => {
+    const response = await request(app)
+      .get('/api/premium-data')
+      .expect(402);
+    
+    expect(response.body).toHaveProperty('error', 'Payment Required');
+    expect(response.body).toHaveProperty('payment');
+    expect(response.body.payment).toHaveProperty('amount');
+    expect(response.body.payment).toHaveProperty('recipient');
+  });
+  
+  test('Accepts valid payment and returns data', async () => {
+    const paymentHeader = await generateTestPayment('0.01');
+    
+    const response = await request(app)
+      .get('/api/premium-data')
+      .set('x-payment-authorization', paymentHeader)
+      .expect(200);
+    
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('timestamp');
+  });
+  
+  test('Rejects insufficient payment amount', async () => {
+    const paymentHeader = await generateTestPayment('0.005'); // Too low
+    
+    const response = await request(app)
+      .get('/api/premium-data')
+      .set('x-payment-authorization', paymentHeader)
+      .expect(402);
+    
+    expect(response.body).toHaveProperty('error', 'Insufficient payment');
+  });
+  
+  test('Handles network errors gracefully', async () => {
+    // Mock facilitator network error
+    jest.spyOn(facilitator, 'verifyPayment')
+        .mockRejectedValue(new Error('Network timeout'));
+    
+    const paymentHeader = await generateTestPayment('0.01');
+    
+    const response = await request(app)
+      .get('/api/premium-data')
+      .set('x-payment-authorization', paymentHeader)
+      .expect(503);
+    
+    expect(response.body.error).toContain('Network');
+  });
+});
+
+// Test utility functions
+async function generateTestPayment(amount) {
+  const mockPayment = {
+    signature: 'mock_signature_' + Date.now(),
+    authorization
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402-Powered Service</h3>
+    <p>AskClaude.shop is a live x402 service — AI agents pay per query with USDC micropayments.</p>
+    <a href="https://askclaude.shop" class="btn" target="_blank" rel="noopener">Visit AskClaude.shop</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="what-is-x402-protocol.html" class="article-card">
+      <h3>What is x402 Protocol? Complete Beginner Guide</h3>
+      <p>Learn what the x402 protocol is, how it enables machine-to-machine payments using HTTP 402, and why it matters for AI agent commerce.</p>
+    </a>
+    <a href="x402-vs-traditional-api-billing.html" class="article-card">
+      <h3>x402 vs Traditional API Billing: Cost Comparison</h3>
+      <p>Compare x402 micropayments against subscription models, API keys, and usage-based billing. See the real cost breakdown.</p>
+    </a>
+    <a href="building-first-x402-service-nodejs.html" class="article-card">
+      <h3>Building Your First x402 Service with Node.js</h3>
+      <p>Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.</p>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>

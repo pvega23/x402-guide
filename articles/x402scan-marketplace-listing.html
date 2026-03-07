@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>x402scan Marketplace: Getting Listed and Found — x402 Guide</title>
+  <meta name="description" content="How to get your x402 service listed on x402scan, optimize your listing, and attract more AI agent customers.">
+  <meta name="keywords" content="x402 protocol, marketplace, discovery, AI agent payments, USDC micropayments">
+  <link rel="canonical" href="https://x402.guide/articles/x402scan-marketplace-listing.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="x402scan Marketplace: Getting Listed and Found">
+  <meta property="og:description" content="How to get your x402 service listed on x402scan, optimize your listing, and attract more AI agent customers.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/x402scan-marketplace-listing.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "x402scan Marketplace: Getting Listed and Found",
+    "description": "How to get your x402 service listed on x402scan, optimize your listing, and attract more AI agent customers.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2025-06-01",
+    "dateModified": "2025-06-01",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/x402scan-marketplace-listing.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>x402scan Marketplace: Getting Listed and Found</h1>
+    <div class="meta">
+      <span class="tag">marketplace</span> <span class="tag">discovery</span> &middot; x402 Guide
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>What is x402scan and Why Your Service Needs to Be Listed</h2>
+
+<p>The x402 protocol has revolutionized how AI agents discover and pay for services through machine-to-machine micropayments. As the ecosystem grows, discoverability becomes crucial for service providers looking to attract automated customers. Enter x402scan — the premier marketplace and explorer for x402-enabled services.</p>
+
+<p>x402scan serves as both a directory where AI agents can discover available services and a monitoring tool that tracks payment activity across the x402 network. For service providers, getting listed on x402scan isn't just about visibility; it's about joining the primary discovery mechanism that AI agents use to find and evaluate services in the decentralized payment ecosystem.</p>
+
+<p>Unlike traditional API marketplaces that require lengthy approval processes and revenue sharing, x402scan operates as an open directory where any service implementing the x402 protocol can be discovered. This democratized approach means that whether you're running a simple text processing API or a complex AI service like AskClaude.shop, your service can be found by the growing number of AI agents looking for pay-per-use resources.</p>
+
+<h2>Understanding the x402scan Ecosystem</h2>
+
+<p>Before diving into the listing process, it's important to understand how x402scan fits into the broader x402 ecosystem. The platform aggregates data from multiple blockchain networks where x402 payments occur, including Base L2, Ethereum mainnet, and Solana. This comprehensive view allows AI agents to compare services across different networks and choose the most cost-effective options.</p>
+
+<p>x402scan monitors facilitators like the Coinbase CDP Facilitator and UltravioletaDAO to track successful payments and service reliability. This creates a reputation system where services with consistent uptime and successful payment processing naturally rank higher in search results.</p>
+
+<p>The marketplace also integrates with the <a href="../articles/x402-bazaar-bot-discovery.html">x402 Bazaar discovery mechanism</a>, creating multiple pathways for AI agents to find your service. This redundancy ensures that your service remains discoverable even as new discovery protocols emerge.</p>
+
+<h3>Key Features of x402scan</h3>
+
+<p>x402scan offers several features that make it valuable for both service providers and consumers:</p>
+
+<ul>
+<li><strong>Real-time payment monitoring:</strong> Track successful transactions and identify popular services</li>
+<li><strong>Service categorization:</strong> Organize services by type (AI, data processing, utilities, etc.)</li>
+<li><strong>Pricing transparency:</strong> Display current rates and pricing models for easy comparison</li>
+<li><strong>Network support:</strong> Show which blockchain networks each service supports</li>
+<li><strong>Reliability metrics:</strong> Display uptime and success rates for payment processing</li>
+<li><strong>API documentation links:</strong> Direct access to service documentation and endpoints</li>
+</ul>
+
+<h2>Prerequisites: Preparing Your x402 Service for Listing</h2>
+
+<p>Before you can list your service on x402scan, you need to ensure your API properly implements the x402 protocol. If you haven't already set up x402 payment acceptance, check out our guide on <a href="../articles/building-first-x402-service-nodejs.html">building your first x402 service with Node.js</a>.</p>
+
+<h3>Technical Requirements</h3>
+
+<p>Your service must meet these basic technical requirements:</p>
+
+<ul>
+<li>Properly return HTTP 402 status codes with payment details</li>
+<li>Support at least one x402 facilitator (CDP or UltravioletaDAO)</li>
+<li>Accept USDC payments on supported networks</li>
+<li>Provide clear API documentation</li>
+<li>Maintain reasonable uptime (>95% recommended)</li>
+</ul>
+
+<p>Here's a minimal example of proper x402 response headers:</p>
+
+<pre><code>HTTP/1.1 402 Payment Required
+Content-Type: application/json
+x402-payment-required: true
+x402-amount: 0.01
+x402-currency: USDC
+x402-network: base
+x402-facilitator: cdp
+x402-description: AI text processing service
+
+{
+  "error": "Payment required",
+  "payment": {
+    "amount": "0.01",
+    "currency": "USDC",
+    "network": "base",
+    "facilitator": "cdp",
+    "description": "AI text processing service"
+  }
+}
+</code></pre>
+
+<h3>Service Documentation</h3>
+
+<p>Comprehensive documentation is crucial for listing success. Your documentation should include:</p>
+
+<ul>
+<li>Clear API endpoint descriptions</li>
+<li>Request/response examples</li>
+<li>Pricing structure and payment flow</li>
+<li>Error handling examples</li>
+<li>Rate limits and usage guidelines</li>
+<li>Contact information for support</li>
+</ul>
+
+<h2>Step-by-Step Guide to Getting Listed on x402scan</h2>
+
+<p>The listing process on x402scan is designed to be straightforward while ensuring quality services enter the marketplace.</p>
+
+<h3>Step 1: Service Verification</h3>
+
+<p>x402scan uses automated crawlers to discover services by monitoring successful x402 transactions on supported blockchain networks. However, you can expedite the process by submitting your service directly:</p>
+
+<ol>
+<li>Visit the x402scan website and navigate to "List Your Service"</li>
+<li>Provide your service's primary endpoint URL</li>
+<li>Specify which networks and facilitators you support</li>
+<li>Include a brief description of your service functionality</li>
+</ol>
+
+<p>The platform will then perform automated tests to verify your x402 implementation:</p>
+
+<pre><code>// Example verification test flow
+GET /your-api-endpoint
+// Should return 402 with proper headers
+
+POST /your-api-endpoint
+Headers: {
+  'x402-payment': 'authorization_signature_here'
+}
+// Should process payment and return content
+</code></pre>
+
+<h3>Step 2: Service Classification</h3>
+
+<p>During the submission process, you'll need to categorize your service. x402scan uses the following primary categories:</p>
+
+<ul>
+<li><strong>AI & Machine Learning:</strong> Text processing, image generation, language models</li>
+<li><strong>Data Processing:</strong> Analytics, transformation, validation services</li>
+<li><strong>Utilities:</strong> Format conversion, compression, hashing</li>
+<li><strong>Information Services:</strong> Weather, news, financial data</li>
+<li><strong>Computing Resources:</strong> Code execution, computational tasks</li>
+</ul>
+
+<p>Choose the category that best matches your primary use case. This classification helps AI agents filter services when searching for specific functionality.</p>
+
+<h3>Step 3: Metadata Configuration</h3>
+
+<p>Provide comprehensive metadata to improve your service's discoverability:</p>
+
+<pre><code>{
+  "name": "Your Service Name",
+  "description": "Detailed description of functionality",
+  "category": "ai-ml",
+  "tags": ["text-processing", "nlp", "api"],
+  "pricing": {
+    "model": "per-request",
+    "amount": "0.01",
+    "currency": "USDC"
+  },
+  "networks": ["base", "ethereum"],
+  "facilitators": ["cdp", "ultravioleta"],
+  "documentation_url": "https://yourservice.com/docs",
+  "contact": "support@yourservice.com"
+}
+</code></pre>
+
+<h2>Optimizing Your x402scan Listing</h2>
+
+<p>Getting listed is just the beginning. To attract AI agent customers and climb the rankings, you need to optimize your listing for both discoverability and conversion.</p>
+
+<h3>Crafting an Effective Service Description</h3>
+
+<p>Your service description is often the first thing potential customers see. Make it count by:</p>
+
+<ul>
+<li>Leading with your primary value proposition</li>
+<li>Using clear, technical language that AI agents can parse</li>
+<li>Including relevant keywords for search functionality</li>
+<li>Highlighting unique features or competitive advantages</li>
+<li>Mentioning supported input/output formats</li>
+</ul>
+
+<p>For example, instead of "AI service for text," use "Natural language processing API for sentiment analysis, entity extraction, and text summarization with JSON I/O."</p>
+
+<h3>Pricing Strategy for Maximum Visibility</h3>
+
+<p>x402scan's search algorithm considers pricing alongside other factors. Research shows that moderately priced services often outperform both premium and ultra-low-cost alternatives. Consider these <a href="../articles/x402-pricing-strategies.html">pricing strategies</a>:</p>
+
+<ul>
+<li><strong>Competitive Analysis:</strong> Research similar services and price competitively</li>
+<li><strong>Value-Based Pricing:</strong> Price based on the value you provide, not just costs</li>
+<li><strong>Tiered Options:</strong> Offer different service levels at different price points</li>
+<li><strong>Volume Discounts:</strong> Implement automatic discounts for high-volume users</li>
+</ul>
+
+<h3>Technical Optimization</h3>
+
+<p>Several technical factors influence your ranking on x402scan:</p>
+
+<h4>Response Time</h4>
+<p>AI agents prefer fast services. Optimize your response times by:</p>
+
+<pre><code>// Implement efficient caching
+const cache = new Map();
+
+app.post('/api/process', async (req, res) => {
+  const cacheKey = generateKey(req.body);
+  
+  if (cache.has(cacheKey)) {
+    return res.json(cache.get(cacheKey));
+  }
+  
+  const result = await processRequest(req.body);
+  cache.set(cacheKey, result);
+  
+  res.json(result);
+});
+</code></pre>
+
+<h4>Uptime Monitoring</h4>
+<p>x402scan tracks service availability. Implement robust monitoring and alerting:</p>
+
+<pre><code>// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: process.env.VERSION
+  });
+});
+</code></pre>
+
+<h4>Error Handling</h4>
+<p>Proper error handling improves your service's reliability rating:</p>
+
+<pre><code>app.use((error, req, res, next) => {
+  console.error('Service error:', error);
+  
+  res.status(500).json({
+    error: 'Internal server error',
+    message: 'Please try again later',
+    support: 'support@yourservice.com'
+  });
+});
+</code></pre>
+
+<h2>Advanced Listing Features and Customization</h2>
+
+<p>x402scan offers advanced features for established services looking to maximize their visibility and conversion rates.</p>
+
+<h3>Custom Service Pages</h3>
+
+<p>Verified services can create detailed custom pages that include:</p>
+
+<ul>
+<li>Interactive API demos and test interfaces</li>
+<li>Detailed usage examples and code snippets</li>
+<li>Performance benchmarks and case studies</li>
+<li>Integration guides for popular AI frameworks</li>
+<li>Real-time usage statistics and testimonials</li>
+</ul>
+
+<h3>API Analytics Integration</h3>
+
+<p>Connect your service analytics to provide transparency to potential customers:</p>
+
+<pre><code>// Analytics endpoint for x402scan
+app.get('/x402/analytics', authenticateX402Scan, (req, res) => {
+  res.json({
+    total_requests_24h: getTotalRequests24h(),
+    average_response_time: getAverageResponseTime(),
+    success_rate: getSuccessRate(),
+    uptime_percentage: getUptimePercentage()
+  });
+});
+</code></pre>
+
+<h3>Featured Listing Options</h3>
+
+<p>High-quality services may be eligible for featured placement through:</p>
+
+<ul>
+<li>Sponsored listings with enhanced visibility</li>
+<li>Category-specific promotion opportunities</li>
+<li>Integration with x402 Bazaar for automatic discovery</li>
+<li>Cross-promotion with complementary services</li>
+</ul>
+
+<h2>Marketing Your x402 Service Beyond x402scan</h2>
+
+<p>While x402scan is crucial for discoverability, a comprehensive marketing strategy includes multiple channels.</p>
+
+<h3>Developer Community Engagement</h3>
+
+<p>Build relationships within the AI and blockchain development communities:</p>
+
+<ul>
+<li>Contribute to open-source x402 tooling and libraries</li>
+<li>Share insights and case studies on technical blogs</li>
+<li>Participate in hackathons and developer conferences</li>
+<li>Create educational content about your service's use cases</li>
+</ul>
+
+<h3>Partnership Opportunities</h3>
+
+<p>Consider partnerships with:</p>
+
+<ul>
+<li>AI agent platform providers</li>
+<li>Other x402 service providers for bundled offerings</li>
+<li>Blockchain infrastructure companies</li>
+<li>Developer tool companies serving the AI space</li>
+</ul>
+
+<h3>Content Marketing</h3>
+
+<p>Create valuable content that demonstrates your expertise:</p>
+
+<ul>
+<li>Technical tutorials showing your API in action</li>
+<li>Performance comparisons with traditional payment methods</li>
+<li>Case studies of successful AI agent integrations</li>
+<li>Industry insights about machine-to-machine payments</li>
+</ul>
+
+<h2>Monitoring Performance and Optimizing Results</h2>
+
+<p>Success on x402scan requires ongoing monitoring and optimization based on performance data.</p>
+
+<h3>Key Metrics to Track</h3>
+
+<p>Monitor these essential metrics to gauge your listing's performance:</p>
+
+<ul>
+<li><strong>Discovery Rate:</strong> How often your service appears in search results</li>
+<li><strong>Click-Through Rate:</strong> Percentage of searches that result in visits</li>
+<li><strong>Conversion Rate:</strong> Percentage of visits that result in payments</li>
+<li><strong>Customer Retention:</strong> How often customers return for repeat purchases</li>
+<li><strong>Average Transaction Value:</strong> Mean payment amount per transaction</li>
+</ul>
+
+<h3>A/B Testing Your Listing</h3>
+
+<p>Continuously improve your listing through systematic testing:</p>
+
+<pre><code>// Example: Testing different descriptions
+const descriptions = [
+  "Fast NLP processing with 99.9% uptime",
+  "Enterprise-grade text analysis API",
+  "Real-time sentiment analysis and entity extraction"
+];
+
+// Rotate descriptions and measure conversion rates
+function getOptimalDescription() {
+  return descriptions.sort((a, b) => 
+    getConversionRate(b) - getConversionRate(a)
+  )[0];
+}
+</code></pre>
+
+<h3>Customer Feedback Integration</h3>
+
+<p>While x402 transactions are automated, you can still gather feedback through:</p>
+
+<ul>
+<li>Optional feedback endpoints in your API</li>
+<li>Error rate analysis to identify improvement areas</li>
+<li>Usage pattern analysis to understand customer needs</li>
+<li>Direct outreach to high-volume customers</li>
+</ul>
+
+<h2>Common Pitfalls and How to Avoid Them</h2>
+
+<p>Learn from common mistakes that prevent services from succeeding on x402scan.</p>
+
+<h3>Technical Issues</h3>
+
+<ul>
+<li><strong>Inconsistent 402 responses:</strong> Ensure your service always returns proper payment headers</li>
+<li><strong>Facilitator compatibility:</strong> Test with multiple facilitators to maximize reach</li>
+<li><strong>Network congestion handling:</strong> Implement graceful degradation during high network usage</li>
+<li><strong>Authentication errors:</strong> Properly validate x402 payment signatures</li>
+</ul>
+
+<h3>Business Strategy Mistakes</h3>
+
+<ul>
+<li><strong>Overpricing:</strong> Price your service competitively for the value provided</li>
+<li><strong>Poor documentation:</strong> Invest in clear, comprehensive API documentation</li>
+<li><strong>Ignoring customer needs:</strong> Regularly review usage patterns and adapt</li>
+<li><strong>Neglecting updates:</strong> Keep your service current with protocol improvements</li>
+</ul>
+
+<h2>Future Developments and Staying Ahead
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402-Powered Service</h3>
+    <p>AskClaude.shop is a live x402 service — AI agents pay per query with USDC micropayments.</p>
+    <a href="https://askclaude.shop" class="btn" target="_blank" rel="noopener">Visit AskClaude.shop</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="what-is-x402-protocol.html" class="article-card">
+      <h3>What is x402 Protocol? Complete Beginner Guide</h3>
+      <p>Learn what the x402 protocol is, how it enables machine-to-machine payments using HTTP 402, and why it matters for AI agent commerce.</p>
+    </a>
+    <a href="how-to-accept-x402-payments-api.html" class="article-card">
+      <h3>How to Accept x402 Payments in Your API</h3>
+      <p>Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.</p>
+    </a>
+    <a href="x402-vs-traditional-api-billing.html" class="article-card">
+      <h3>x402 vs Traditional API Billing: Cost Comparison</h3>
+      <p>Compare x402 micropayments against subscription models, API keys, and usage-based billing. See the real cost breakdown.</p>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>
