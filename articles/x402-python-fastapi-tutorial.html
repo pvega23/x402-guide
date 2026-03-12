@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Build a Pay-Per-Query API with x402 and Python (FastAPI) — x402 Guide</title>
+  <meta name="description" content="Step-by-step x402 Python FastAPI tutorial. Build a pay-per-query AI API that accepts USDC micropayments on Base network using the x402 SDK and Claude AI.">
+  <meta name="keywords" content="x402 Python FastAPI tutorial, x402 Python SDK, pay-per-query API, USDC micropayments FastAPI, x402 protocol Python, AI API monetization">
+  <link rel="canonical" href="https://x402.guide/articles/x402-python-fastapi-tutorial.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="How to Build a Pay-Per-Query API with x402 and Python (FastAPI)">
+  <meta property="og:description" content="Step-by-step x402 Python FastAPI tutorial. Build a pay-per-query AI API that accepts USDC micropayments on Base network.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/x402-python-fastapi-tutorial.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Build a Pay-Per-Query API with x402 and Python (FastAPI)",
+    "description": "Step-by-step x402 Python FastAPI tutorial. Build a pay-per-query AI API that accepts USDC micropayments on Base network using the x402 SDK and Claude AI.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2026-03-11",
+    "dateModified": "2026-03-11",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/x402-python-fastapi-tutorial.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>How to Build a Pay-Per-Query API with x402 and Python (FastAPI)</h1>
+    <div class="meta">
+      <span class="tag">tutorial</span> <span class="tag">python</span> &middot; x402 Guide &middot; 18 min read
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>Why Python + FastAPI for x402 Services</h2>
+
+<p>Python is the dominant language in AI and machine learning. If you're building an AI-powered API that charges per query using the x402 protocol, FastAPI is the natural choice &mdash; it's async, fast, and has built-in request validation with Pydantic. The <code>x402</code> Python SDK makes it straightforward to add USDC micropayments to any FastAPI endpoint.</p>
+
+<p>In this x402 Python FastAPI tutorial, you'll build a fully working pay-per-query AI API that accepts USDC payments on Base network. By the end, you'll have an API similar to <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a> &mdash; a live production service where AI agents pay per query to get Claude AI responses.</p>
+
+<h2>What You'll Build</h2>
+
+<p>A FastAPI service with three paid endpoints:</p>
+
+<ul>
+<li><code>/ask</code> &mdash; Ask Claude AI a question ($0.01 USDC per query)</li>
+<li><code>/summarize</code> &mdash; Summarize any text ($0.005 USDC per request)</li>
+<li><code>/analyze</code> &mdash; Analyze sentiment of text ($0.003 USDC per request)</li>
+</ul>
+
+<p>Each endpoint accepts USDC micropayments via the x402 protocol on Base network. No API keys, no subscriptions &mdash; just pay and get your response.</p>
+
+<h2>Prerequisites</h2>
+
+<p>Before starting this x402 Python FastAPI tutorial, make sure you have:</p>
+
+<ul>
+<li>Python 3.10 or higher</li>
+<li>A Coinbase Developer Platform (CDP) account for the facilitator</li>
+<li>A wallet address on Base network to receive USDC payments</li>
+<li>An Anthropic API key (for the Claude AI integration)</li>
+<li>Basic familiarity with FastAPI and async Python</li>
+</ul>
+
+<p>If you need a refresher on how x402 payments work under the hood, read the <a href="x402-payment-flow-explained.html">x402 payment flow explained</a> article first.</p>
+
+<h2>Step 1: Project Setup</h2>
+
+<p>Create a new project directory and set up a virtual environment:</p>
+
+<pre><code>mkdir x402-ai-api
+cd x402-ai-api
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+</code></pre>
+
+<p>Install the required packages. The <code>x402</code> Python SDK includes a FastAPI integration that handles payment verification automatically:</p>
+
+<pre><code>pip install "x402[fastapi]"
+pip install anthropic
+pip install python-dotenv
+pip install uvicorn
+</code></pre>
+
+<p>The <code>x402[fastapi]</code> package gives you middleware that intercepts requests, verifies USDC payments with a facilitator, and only lets paid requests through to your endpoint handlers.</p>
+
+<h2>Step 2: Environment Configuration</h2>
+
+<p>Create a <code>.env</code> file with your credentials:</p>
+
+<pre><code># .env
+# Your wallet address on Base network (receives USDC payments)
+WALLET_ADDRESS=0xYourWalletAddressHere
+
+# Anthropic API key for Claude AI
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# CDP API credentials (for x402 facilitator)
+CDP_API_KEY_ID=your-cdp-key-id
+CDP_API_KEY_SECRET=your-cdp-key-secret
+
+# Server settings
+HOST=0.0.0.0
+PORT=4021
+</code></pre>
+
+<p>Create a <code>.gitignore</code> so you never commit secrets:</p>
+
+<pre><code># .gitignore
+.env
+venv/
+__pycache__/
+*.pyc
+</code></pre>
+
+<h2>Step 3: Build the FastAPI Application</h2>
+
+<p>Create <code>main.py</code> &mdash; this is the core of your pay-per-query API:</p>
+
+<pre><code>import os
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import anthropic
+
+from x402.fastapi import x402_middleware
+
+load_dotenv()
+
+# --- Configuration ---
+WALLET_ADDRESS = os.getenv("WALLET_ADDRESS")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+if not WALLET_ADDRESS:
+    raise ValueError("WALLET_ADDRESS is required in .env")
+if not ANTHROPIC_API_KEY:
+    raise ValueError("ANTHROPIC_API_KEY is required in .env")
+
+# --- Initialize FastAPI ---
+app = FastAPI(
+    title="x402 AI API",
+    description="Pay-per-query AI API powered by x402 and Claude",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- x402 Payment Middleware ---
+# This middleware intercepts requests to paid routes,
+# returns 402 Payment Required if no payment is provided,
+# and verifies USDC payments with the facilitator.
+x402_middleware(
+    app,
+    facilitator_url="https://x402.org/facilitator",
+    payment_address=WALLET_ADDRESS,
+    network="base",
+)
+
+# --- Claude AI Client ---
+claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+# --- Request Models ---
+class AskRequest(BaseModel):
+    question: str
+    max_tokens: int = 500
+
+
+class SummarizeRequest(BaseModel):
+    text: str
+    max_length: int = 200
+
+
+class AnalyzeRequest(BaseModel):
+    text: str
+
+
+# --- Free Endpoints (no payment required) ---
+
+@app.get("/")
+async def root():
+    """Service info — free, no payment needed."""
+    return {
+        "service": "x402 AI API",
+        "description": "Pay-per-query AI powered by Claude",
+        "endpoints": {
+            "/ask": {"price": "$0.01 USDC", "method": "POST"},
+            "/summarize": {"price": "$0.005 USDC", "method": "POST"},
+            "/analyze": {"price": "$0.003 USDC", "method": "POST"},
+        },
+        "network": "base",
+        "currency": "USDC",
+        "powered_by": "x402 protocol",
+    }
+
+
+# --- Paid Endpoints ---
+
+@app.post("/ask", x402={"price": "0.01", "currency": "USDC"})
+async def ask_claude(req: AskRequest):
+    """Ask Claude AI a question. Costs $0.01 USDC per query."""
+    try:
+        response = claude.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=req.max_tokens,
+            messages=[
+                {"role": "user", "content": req.question}
+            ],
+        )
+        return {
+            "answer": response.content[0].text,
+            "model": "claude-sonnet-4-20250514",
+            "tokens_used": response.usage.output_tokens,
+            "price_paid": "0.01 USDC",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+@app.post("/summarize", x402={"price": "0.005", "currency": "USDC"})
+async def summarize_text(req: SummarizeRequest):
+    """Summarize text. Costs $0.005 USDC per request."""
+    if len(req.text) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Text must be at least 50 characters to summarize.",
+        )
+
+    try:
+        response = claude.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=req.max_length,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Summarize the following text in {req.max_length} words or fewer. Be concise and capture the key points:\n\n{req.text}",
+                }
+            ],
+        )
+        return {
+            "summary": response.content[0].text,
+            "original_length": len(req.text),
+            "price_paid": "0.005 USDC",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+@app.post("/analyze", x402={"price": "0.003", "currency": "USDC"})
+async def analyze_sentiment(req: AnalyzeRequest):
+    """Analyze text sentiment. Costs $0.003 USDC per request."""
+    if len(req.text) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Text must be at least 10 characters.",
+        )
+
+    try:
+        response = claude.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=150,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f'Analyze the sentiment of this text. Respond with a JSON object containing "sentiment" (positive/negative/neutral), "confidence" (0-1), and "explanation" (one sentence).\n\nText: {req.text}',
+                }
+            ],
+        )
+        return {
+            "analysis": response.content[0].text,
+            "price_paid": "0.003 USDC",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+</code></pre>
+
+<h2>Step 4: Understanding the x402 Payment Flow</h2>
+
+<p>Here's exactly what happens when a client calls your <code>/ask</code> endpoint:</p>
+
+<ol>
+<li><strong>Client sends POST to /ask</strong> without any payment header.</li>
+<li><strong>x402 middleware intercepts</strong> the request and sees no payment proof.</li>
+<li><strong>Server responds with HTTP 402</strong> (Payment Required), including the price (0.01 USDC), the wallet address, the network (Base), and the facilitator URL.</li>
+<li><strong>Client authorizes a USDC transfer</strong> using EIP-3009 (gasless authorization) on Base.</li>
+<li><strong>Client resubmits the request</strong> with the payment authorization in the <code>X-PAYMENT</code> header.</li>
+<li><strong>x402 middleware verifies payment</strong> with the facilitator, which checks the authorization is valid and settles the USDC.</li>
+<li><strong>Request reaches your endpoint handler</strong>, Claude processes the query, and the response is returned.</li>
+</ol>
+
+<p>The beauty of x402 is that your endpoint code doesn't need to know anything about payments. The middleware handles everything. Your <code>/ask</code> handler just processes the question and returns the answer.</p>
+
+<h2>Step 5: Run the Server</h2>
+
+<p>Start your API server:</p>
+
+<pre><code>uvicorn main:app --host 0.0.0.0 --port 4021 --reload
+</code></pre>
+
+<p>Visit <code>http://localhost:4021</code> to see the service info (free endpoint). Visit <code>http://localhost:4021/docs</code> for the auto-generated FastAPI Swagger documentation.</p>
+
+<h2>Step 6: Test Your Paid Endpoints</h2>
+
+<p>To test the payment flow, you can use the x402 Python client. Create a <code>test_client.py</code>:</p>
+
+<pre><code>import httpx
+from x402.client import x402_client
+
+# Create an x402-aware HTTP client
+# This client automatically handles the 402 → pay → retry flow
+client = x402_client(
+    wallet_private_key="0xYourPrivateKeyHere",  # Testnet key with USDC
+    network="base",
+)
+
+# Ask Claude a question (pays 0.01 USDC automatically)
+response = client.post(
+    "http://localhost:4021/ask",
+    json={"question": "What is the x402 protocol?"},
+)
+
+print(response.json())
+# {
+#     "answer": "x402 is an HTTP-native payment protocol...",
+#     "model": "claude-sonnet-4-20250514",
+#     "tokens_used": 142,
+#     "price_paid": "0.01 USDC"
+# }
+
+# Summarize text (pays 0.005 USDC)
+response = client.post(
+    "http://localhost:4021/summarize",
+    json={
+        "text": "The x402 protocol enables machine-to-machine payments "
+        "using the HTTP 402 status code. It allows AI agents to pay "
+        "for API access with USDC micropayments on blockchain networks "
+        "like Base, without requiring API keys or subscriptions..."
+    },
+)
+
+print(response.json())
+</code></pre>
+
+<h2>Step 7: Add Multiple Price Tiers</h2>
+
+<p>One of the strengths of x402 is per-endpoint pricing. You can charge different amounts for different endpoints based on the compute cost or value provided. Here's how to add a premium endpoint that uses a more powerful model:</p>
+
+<pre><code>@app.post("/ask-premium", x402={"price": "0.05", "currency": "USDC"})
+async def ask_claude_premium(req: AskRequest):
+    """Premium AI query with Claude Opus. Costs $0.05 USDC."""
+    try:
+        response = claude.messages.create(
+            model="claude-opus-4-20250514",
+            max_tokens=min(req.max_tokens, 2000),
+            messages=[
+                {"role": "user", "content": req.question}
+            ],
+        )
+        return {
+            "answer": response.content[0].text,
+            "model": "claude-opus-4-20250514",
+            "tokens_used": response.usage.output_tokens,
+            "price_paid": "0.05 USDC",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+</code></pre>
+
+<p>This pattern &mdash; charging more for more expensive compute &mdash; is exactly how <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a> operates in production. Different models and capabilities have different prices, all handled automatically by the x402 middleware.</p>
+
+<h2>Step 8: Deploy to Production</h2>
+
+<p>For production deployment, you'll want a proper ASGI server and a reverse proxy. Here's a minimal production setup:</p>
+
+<h3>Create a <code>run.py</code> for production:</h3>
+
+<pre><code>import uvicorn
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", 4021)),
+        workers=4,          # Multiple workers for production
+        log_level="info",
+        access_log=True,
+    )
+</code></pre>
+
+<h3>Set up with systemd (Linux) or launchd (macOS):</h3>
+
+<pre><code># /etc/systemd/system/x402-ai-api.service
+[Unit]
+Description=x402 AI API
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/opt/x402-ai-api
+ExecStart=/opt/x402-ai-api/venv/bin/python run.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/x402-ai-api/.env
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+
+<p>Then expose it through a Cloudflare tunnel or nginx reverse proxy with HTTPS. AI agents need a public URL to reach your API.</p>
+
+<h2>Step 9: Register on x402 Discovery Services</h2>
+
+<p>Once your API is live, register it so AI agents can find it:</p>
+
+<ul>
+<li><strong>x402scan</strong> &mdash; List your endpoints on the <a href="x402scan-marketplace-listing.html">x402scan marketplace</a> so agents can discover your service.</li>
+<li><strong>x402 Bazaar</strong> &mdash; Register with <a href="x402-bazaar-bot-discovery.html">x402 Bazaar</a> for automated bot discovery.</li>
+<li><strong>Your own domain</strong> &mdash; Point a domain at your service. AI agents can discover x402 endpoints by querying your root URL.</li>
+</ul>
+
+<h2>Complete Project Structure</h2>
+
+<p>Here's what your finished project looks like:</p>
+
+<pre><code>x402-ai-api/
+  main.py            # FastAPI app with x402 middleware and endpoints
+  run.py             # Production server runner
+  test_client.py     # Test script for payment flow
+  .env               # Environment variables (never commit this)
+  .gitignore         # Git ignore rules
+  requirements.txt   # pip freeze output
+  venv/              # Virtual environment
+</code></pre>
+
+<p>Generate your <code>requirements.txt</code>:</p>
+
+<pre><code>pip freeze > requirements.txt
+</code></pre>
+
+<h2>Key Takeaways</h2>
+
+<ul>
+<li><strong>x402 + FastAPI is minimal code.</strong> The middleware handles all payment logic. Your endpoint handlers stay clean and focused on business logic.</li>
+<li><strong>Per-endpoint pricing gives you flexibility.</strong> Charge $0.003 for lightweight analysis and $0.05 for premium AI queries &mdash; all in the same service.</li>
+<li><strong>Base network keeps costs low.</strong> USDC on Base has near-zero gas fees, making micropayments practical.</li>
+<li><strong>No API keys to manage.</strong> Clients pay per request. No sign-up forms, no rate limit tiers, no billing dashboards.</li>
+<li><strong>AI agents can consume your API autonomously.</strong> The x402 protocol is designed for machine-to-machine commerce &mdash; agents discover your service, pay per query, and move on.</li>
+</ul>
+
+<p>To see this pattern running in production, check out <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a> &mdash; it uses this exact architecture to serve AI queries at scale with x402 micropayments.</p>
+
+<p>For more on choosing the right facilitator for your service, read our <a href="comparing-x402-facilitators.html">facilitator comparison guide</a>. And if you're coming from Node.js, the <a href="building-first-x402-service-nodejs.html">Node.js x402 tutorial</a> covers the same concepts with Express.</p>
+
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402-Powered Service</h3>
+    <p>AskClaude.shop is a live x402 service — AI agents pay per query with USDC micropayments.</p>
+    <a href="https://askclaude.shop" class="btn" target="_blank" rel="noopener">Visit AskClaude.shop</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="building-first-x402-service-nodejs.html" class="article-card">
+      <h3>Building Your First x402 Service with Node.js</h3>
+      <p>Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.</p>
+    </a>
+    <a href="x402-payment-flow-explained.html" class="article-card">
+      <h3>x402 Payment Flow Explained Step by Step</h3>
+      <p>Visual walkthrough of the complete x402 payment flow from HTTP 402 response to USDC settlement. Every step explained.</p>
+    </a>
+    <a href="x402-pricing-strategies.html" class="article-card">
+      <h3>x402 Pricing Strategies: Maximizing Revenue</h3>
+      <p>Learn how to price your x402 API endpoints for maximum revenue. Covers per-request pricing, tiered models, and market positioning.</p>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>

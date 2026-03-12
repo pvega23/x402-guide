@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building an x402-Powered MCP Server: Let AI Agents Pay for Your Tools — x402 Guide</title>
+  <meta name="description" content="Learn how to build an MCP server that accepts x402 payments, letting AI agents like Claude pay for your tools with USDC micropayments. Step-by-step tutorial with code.">
+  <meta name="keywords" content="x402 MCP server, Model Context Protocol, AI agent tools, x402 payments, MCP tutorial, askclaude-mcp, USDC micropayments">
+  <link rel="canonical" href="https://x402.guide/articles/x402-mcp-server-ai-agents-pay-for-tools.html">
+  <link rel="stylesheet" href="../style.css">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Building an x402-Powered MCP Server: Let AI Agents Pay for Your Tools">
+  <meta property="og:description" content="Learn how to build an MCP server that accepts x402 payments, letting AI agents like Claude pay for your tools with USDC micropayments.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://x402.guide/articles/x402-mcp-server-ai-agents-pay-for-tools.html">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Building an x402-Powered MCP Server: Let AI Agents Pay for Your Tools",
+    "description": "Learn how to build an MCP server that accepts x402 payments, letting AI agents like Claude pay for your tools with USDC micropayments. Step-by-step tutorial with code.",
+    "author": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "x402 Guide"
+    },
+    "datePublished": "2026-03-11",
+    "dateModified": "2026-03-11",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://x402.guide/articles/x402-mcp-server-ai-agents-pay-for-tools.html"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <a href="../index.html" class="logo">x402 <span>Guide</span></a>
+    <nav>
+      <a href="../index.html#articles">Articles</a>
+      <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="article-header">
+    <h1>Building an x402-Powered MCP Server: Let AI Agents Pay for Your Tools</h1>
+    <div class="meta">
+      <span class="tag">tutorial</span> <span class="tag">MCP</span> <span class="tag">ai-agents</span> &middot; x402 Guide
+    </div>
+  </div>
+
+  <div class="article-content">
+    <h2>What if AI Agents Could Pay for Your Developer Tools?</h2>
+
+<p>The Model Context Protocol (MCP) is rapidly becoming the standard way AI agents connect to external tools and data sources. Claude, GPT, and other AI assistants already use MCP servers to read files, query databases, call APIs, and more. But here is the missing piece: <strong>how do you charge for those tools?</strong></p>
+
+<p>By combining MCP with the x402 payment protocol, you can build tools that AI agents discover, use, and pay for automatically. No API keys. No billing dashboards. No invoices. The agent hits your tool, pays a few cents in USDC, and gets the result. This is how the autonomous AI economy works.</p>
+
+<p>In this tutorial, you will learn exactly how to build an x402 MCP server from scratch. We will also look at a real, live example: the <a href="https://www.npmjs.com/package/askclaude-mcp" target="_blank" rel="noopener">askclaude-mcp</a> npm package, which connects AI agents to <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a> through MCP with x402 payments built in.</p>
+
+<h2>What is MCP (Model Context Protocol)?</h2>
+
+<p>MCP is an open standard created by Anthropic that defines how AI agents communicate with external tools and data sources. Think of it as a universal plug system: any AI agent that speaks MCP can connect to any MCP server, regardless of who built either side.</p>
+
+<p>An MCP server exposes <strong>tools</strong> (functions the agent can call), <strong>resources</strong> (data the agent can read), and <strong>prompts</strong> (templates for common tasks). The AI agent discovers what is available, decides what it needs, and calls the appropriate tool.</p>
+
+<p>Here is the key insight: MCP servers are already the interface between AI agents and the outside world. Adding x402 payments to that interface means agents can pay for premium tools the same way they call free ones. The payment becomes invisible plumbing.</p>
+
+<h3>Why MCP + x402 Is a Perfect Match</h3>
+
+<ul>
+<li><strong>Programmatic by design:</strong> Both MCP and x402 are built for machine-to-machine communication, not human UIs</li>
+<li><strong>Per-call pricing:</strong> MCP tools are invoked per-request, which maps directly to x402 micropayments</li>
+<li><strong>No auth overhead:</strong> x402 replaces API keys with payment-as-authentication</li>
+<li><strong>Agent autonomy:</strong> AI agents can discover, evaluate, and pay for new tools without human intervention</li>
+</ul>
+
+<h2>Architecture: How an x402 MCP Server Works</h2>
+
+<p>A standard MCP server receives tool calls from AI agents and returns results. An x402 MCP server adds a payment layer between the request and the execution:</p>
+
+<pre><code>┌─────────────┐     MCP Protocol     ┌──────────────────┐     x402 Payment     ┌──────────────┐
+│  AI Agent   │ ──────────────────▶  │  x402 MCP Server │ ──────────────────▶  │  Facilitator │
+│  (Claude)   │ ◀──────────────────  │  (Your Server)   │ ◀──────────────────  │  (Coinbase)  │
+└─────────────┘     Tool Results     └──────────────────┘     Settlement       └──────────────┘</code></pre>
+
+<p>The flow works like this:</p>
+
+<ol>
+<li>AI agent connects to your MCP server and discovers available tools</li>
+<li>Agent calls a tool (e.g., <code>ask_claude</code> or <code>analyze_data</code>)</li>
+<li>Your server checks for a valid x402 payment header</li>
+<li>If no payment: return a 402 response with pricing details</li>
+<li>Agent generates a USDC payment authorization and retries</li>
+<li>Your server verifies payment via the facilitator, executes the tool, and returns the result</li>
+<li>Facilitator settles the USDC on-chain</li>
+</ol>
+
+<h2>Step-by-Step: Building Your x402 MCP Server</h2>
+
+<h3>Prerequisites</h3>
+
+<ul>
+<li>Node.js 18+ installed</li>
+<li>A USDC wallet address on Base (to receive payments)</li>
+<li>A Coinbase CDP API key or access to another <a href="comparing-x402-facilitators.html">x402 facilitator</a></li>
+<li>Basic familiarity with Express.js</li>
+</ul>
+
+<h3>Step 1: Initialize the Project</h3>
+
+<pre><code>mkdir x402-mcp-server
+cd x402-mcp-server
+npm init -y
+npm install @modelcontextprotocol/sdk express x402-express</code></pre>
+
+<p>The <code>@modelcontextprotocol/sdk</code> package provides the MCP server framework. The <code>x402-express</code> package handles x402 payment verification as Express middleware.</p>
+
+<h3>Step 2: Define Your MCP Tools</h3>
+
+<p>Create your server entry point. Each tool you define becomes something AI agents can discover and call:</p>
+
+<pre><code>// server.js
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const server = new McpServer({
+  name: "my-x402-tools",
+  version: "1.0.0",
+  description: "Premium AI tools — pay per use with x402"
+});
+
+// Define a paid tool
+server.tool(
+  "summarize_document",
+  "Summarize any document using advanced AI. Costs $0.01 per request.",
+  {
+    content: z.string().describe("The document text to summarize"),
+    style: z.enum(["brief", "detailed", "bullets"])
+      .describe("Summary style")
+  },
+  async ({ content, style }) => {
+    // This is where your tool logic goes
+    const summary = await generateSummary(content, style);
+    return {
+      content: [{ type: "text", text: summary }]
+    };
+  }
+);
+
+// Define another paid tool
+server.tool(
+  "analyze_sentiment",
+  "Analyze sentiment of text. Costs $0.005 per request.",
+  {
+    text: z.string().describe("Text to analyze")
+  },
+  async ({ text }) => {
+    const result = await analyzeSentiment(text);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }]
+    };
+  }
+);</code></pre>
+
+<h3>Step 3: Add the x402 Payment Layer</h3>
+
+<p>Now wrap your MCP server with an HTTP transport that enforces x402 payments. This is where the payment verification happens:</p>
+
+<pre><code>// http-server.js
+import express from "express";
+import { paymentMiddleware } from "x402-express";
+
+const app = express();
+
+// Your wallet address on Base — this is where USDC payments go
+const PAYEE_ADDRESS = "0xYourWalletAddress";
+
+// Facilitator URL (Coinbase CDP or UltravioletaDAO)
+const FACILITATOR_URL = "https://x402.org/facilitator";
+
+// Define pricing per tool endpoint
+const toolPricing = {
+  "/tools/summarize_document": "$0.01",
+  "/tools/analyze_sentiment": "$0.005"
+};
+
+// Apply x402 middleware to paid endpoints
+for (const [path, price] of Object.entries(toolPricing)) {
+  app.use(path, paymentMiddleware(
+    PAYEE_ADDRESS,
+    {
+      [path]: {
+        price: price,
+        network: "base-sepolia",   // Use "base" for production
+        config: {
+          description: `Payment for ${path}`
+        }
+      }
+    },
+    FACILITATOR_URL
+  ));
+}
+
+// Tool execution endpoints
+app.post("/tools/summarize_document", async (req, res) => {
+  const { content, style } = req.body;
+  const summary = await generateSummary(content, style);
+  res.json({ result: summary });
+});
+
+app.post("/tools/analyze_sentiment", async (req, res) => {
+  const { text } = req.body;
+  const result = await analyzeSentiment(text);
+  res.json({ result });
+});
+
+// Free discovery endpoint — agents can see what tools are available
+app.get("/tools", (req, res) => {
+  res.json({
+    tools: [
+      {
+        name: "summarize_document",
+        description: "Summarize any document using advanced AI",
+        price: "$0.01 USDC",
+        endpoint: "/tools/summarize_document"
+      },
+      {
+        name: "analyze_sentiment",
+        description: "Analyze sentiment of text",
+        price: "$0.005 USDC",
+        endpoint: "/tools/analyze_sentiment"
+      }
+    ],
+    payment: {
+      protocol: "x402",
+      network: "base",
+      currency: "USDC",
+      facilitator: FACILITATOR_URL
+    }
+  });
+});
+
+app.listen(4022, () => {
+  console.log("x402 MCP Server running on port 4022");
+});</code></pre>
+
+<h3>Step 4: Create the MCP Configuration File</h3>
+
+<p>AI agents need to know how to connect to your server. Create an MCP configuration that clients like Claude Desktop or Claude Code can use:</p>
+
+<pre><code>// mcp-config.json
+{
+  "mcpServers": {
+    "my-x402-tools": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "X402_SERVER_URL": "https://your-server.com",
+        "X402_WALLET_KEY": "your-agent-wallet-private-key"
+      }
+    }
+  }
+}</code></pre>
+
+<p>When an agent adds this configuration, it automatically discovers your tools and can start using (and paying for) them immediately.</p>
+
+<h3>Step 5: Handle the Payment Flow in the MCP Client</h3>
+
+<p>On the agent side, the MCP client needs to handle 402 responses. Here is how a client wrapper handles the payment flow transparently:</p>
+
+<pre><code>// mcp-x402-client.js
+import { ethers } from "ethers";
+
+class X402McpClient {
+  constructor(serverUrl, walletPrivateKey) {
+    this.serverUrl = serverUrl;
+    this.wallet = new ethers.Wallet(walletPrivateKey);
+  }
+
+  async callTool(toolName, params) {
+    // First attempt — will get 402 if payment required
+    let response = await fetch(`${this.serverUrl}/tools/${toolName}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params)
+    });
+
+    if (response.status === 402) {
+      // Extract payment requirements
+      const paymentDetails = await response.json();
+
+      // Generate x402 payment authorization
+      const authorization = await this.createPaymentAuth(paymentDetails);
+
+      // Retry with payment
+      response = await fetch(`${this.serverUrl}/tools/${toolName}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-PAYMENT": authorization
+        },
+        body: JSON.stringify(params)
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`Tool call failed: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  async createPaymentAuth(paymentDetails) {
+    const { amount, recipient, validAfter, validBefore } = paymentDetails;
+
+    // Sign EIP-3009 transferWithAuthorization
+    const signature = await this.wallet.signTypedData(
+      paymentDetails.domain,
+      paymentDetails.types,
+      paymentDetails.message
+    );
+
+    return JSON.stringify({ ...paymentDetails.message, signature });
+  }
+}</code></pre>
+
+<h2>Real-World Example: askclaude-mcp</h2>
+
+<p>You do not have to start from scratch. The <a href="https://www.npmjs.com/package/askclaude-mcp" target="_blank" rel="noopener">askclaude-mcp</a> npm package is a live, working example of an x402 MCP server in production. It connects AI agents to <a href="https://askclaude.shop" target="_blank" rel="noopener">AskClaude.shop</a>, which offers 9 paid endpoints including enhanced AI queries, code review, market analysis, and more.</p>
+
+<p>Installing it is one command:</p>
+
+<pre><code>npm install -g askclaude-mcp</code></pre>
+
+<p>Then add it to your Claude Desktop or Claude Code MCP configuration:</p>
+
+<pre><code>{
+  "mcpServers": {
+    "askclaude": {
+      "command": "askclaude-mcp",
+      "env": {
+        "ASKCLAUDE_WALLET_KEY": "your-wallet-private-key"
+      }
+    }
+  }
+}</code></pre>
+
+<p>Once connected, your AI agent can call tools like <code>ask_claude</code>, <code>code_review</code>, or <code>market_analysis</code>. Each call triggers an x402 payment of a few cents, the service processes the request, and the agent gets the result. No signup, no API key, no billing portal.</p>
+
+<p>This is exactly how the x402 MCP server pattern works in production. The package handles all the payment flow internally so the agent experience is seamless.</p>
+
+<h2>Monetization Strategies for Your MCP Tools</h2>
+
+<p>Building an x402 MCP server opens up several revenue models:</p>
+
+<h3>Per-Call Pricing</h3>
+
+<p>The simplest model. Each tool invocation costs a fixed amount. Good for stateless operations like text analysis, data lookups, or API aggregation. This is what AskClaude.shop uses, with prices ranging from $0.01 to $0.10 per call depending on the tool.</p>
+
+<h3>Tiered Pricing by Complexity</h3>
+
+<p>Charge more for expensive operations. A quick sentiment check might cost $0.005, while a full document analysis costs $0.05. You can even inspect the input and price dynamically based on content length or complexity.</p>
+
+<h3>Freemium Discovery</h3>
+
+<p>Make your tool discovery endpoint free (no x402 payment required) so agents can see what you offer. Then charge for actual tool execution. This lowers the barrier to discovery while still monetizing usage.</p>
+
+<h3>Bundle Pricing</h3>
+
+<p>Offer a "session" payment that covers multiple tool calls. The agent pays once and gets a token valid for N calls within a time window. This reduces transaction overhead for high-frequency tools.</p>
+
+<h2>Deployment and Best Practices</h2>
+
+<h3>Use HTTPS in Production</h3>
+
+<p>x402 payment headers contain signed authorization data. Always serve your MCP server over HTTPS to prevent interception. Use a reverse proxy like Cloudflare or Caddy in front of your Node.js server.</p>
+
+<h3>Choose the Right Facilitator</h3>
+
+<p>Your choice of <a href="comparing-x402-facilitators.html">x402 facilitator</a> affects settlement speed and fees. Coinbase CDP Facilitator is the most widely used and trusted. UltravioletaDAO offers a decentralized alternative. Both work with the <code>x402-express</code> middleware.</p>
+
+<h3>Test on Base Sepolia First</h3>
+
+<p>Always test your payment flow on <a href="x402-base-ethereum-solana.html">Base Sepolia testnet</a> before going to production. Testnet USDC is free and the payment flow is identical. Switch to mainnet Base by changing the network configuration.</p>
+
+<h3>Implement Rate Limiting</h3>
+
+<p>Even with x402 payments, implement rate limiting to protect your server from abuse. A paid request is still a request that consumes your compute resources:</p>
+
+<pre><code>import rateLimit from "express-rate-limit";
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 30,               // 30 requests per minute per IP
+  message: { error: "Rate limit exceeded. Try again shortly." }
+});
+
+app.use("/tools", limiter);</code></pre>
+
+<h3>Log Everything</h3>
+
+<p>Track every payment and tool invocation. This gives you analytics on which tools are popular, what agents are willing to pay, and where your revenue comes from. It also helps with debugging failed payments.</p>
+
+<h2>The Bigger Picture: MCP as the AI Agent App Store</h2>
+
+<p>MCP is quickly becoming the "app store" for AI agents. Just as smartphones created a market for mobile apps, MCP is creating a market for AI agent tools. Adding x402 payments to MCP servers turns that market into a real economy.</p>
+
+<p>Today, most MCP servers are free and open source. That is changing. As AI agents handle more complex tasks and operate with real budgets, the demand for premium, reliable, specialized tools will grow. Developers who build high-quality x402 MCP servers now are positioning themselves at the foundation of this emerging market.</p>
+
+<p>The tools are ready. The protocol exists. The agents are already paying. The question is whether you will build the tools they pay for.</p>
+
+  </div>
+
+  <div class="cta-box">
+    <h3>Try an x402 MCP Server Right Now</h3>
+    <p>Install the askclaude-mcp package and connect your AI agent to a live x402 service in minutes.</p>
+    <a href="https://www.npmjs.com/package/askclaude-mcp" class="btn" target="_blank" rel="noopener">Get askclaude-mcp on npm</a>
+  </div>
+
+  <div class="related-articles">
+    <h3>Related Articles</h3>
+    <a href="building-first-x402-service-nodejs.html" class="article-card">
+      <h3>Building Your First x402 Service with Node.js</h3>
+      <p>Build a complete x402-enabled API from scratch using Node.js, Express, and the x402 SDK. Full code walkthrough included.</p>
+    </a>
+    <a href="how-ai-agents-pay-with-x402.html" class="article-card">
+      <h3>How AI Agents Pay for Services with x402</h3>
+      <p>Discover how autonomous AI agents use x402 to pay for APIs, data, and services without human intervention.</p>
+    </a>
+    <a href="how-to-accept-x402-payments-api.html" class="article-card">
+      <h3>How to Accept x402 Payments in Your API</h3>
+      <p>Step-by-step tutorial on adding x402 payment support to your existing API endpoints with code examples.</p>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2025 x402 Guide. Built by an x402 service operator. <a href="https://askclaude.shop">askclaude.shop</a></p>
+</footer>
+
+</body>
+</html>
